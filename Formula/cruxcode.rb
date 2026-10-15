@@ -11,7 +11,7 @@ class Cruxcode < Formula
   desc "Crux Digital's coding harness: pi with GLaDOS workflows and TypeSafe Jev"
   homepage "https://github.com/cruxdigital-llc/homebrew-tools"
   url "https://registry.npmjs.org/@earendil-works/pi-coding-agent/-/pi-coding-agent-1.2.0.tgz"
-  version "0.5.1"
+  version "0.6.1"
   sha256 "1dfed308f46a69aec06bf9dc20700ddc6fe2370b1898f01334b7898397541e66"
   license "MIT"
 
@@ -35,6 +35,9 @@ class Cruxcode < Formula
       export PATH="#{formula_opt_bin("node")}:$PATH"
       # Tells the harness this command installs downloaded updates at launch.
       export CRUXCODE_LAUNCHER=1
+      # pi is pinned to the version cruxcode is tested against (brew upgrade cruxcode moves it), so
+      # pi's own "new version, run pi update" notice would only mislead.
+      export PI_SKIP_VERSION_CHECK=1
       REPO="git:github.com/cruxdigital-llc/cruxcode"
       AGENT_DIR="${PI_CODING_AGENT_DIR:-$HOME/.pi/agent}"
       HARNESS="$AGENT_DIR/git/github.com/cruxdigital-llc/cruxcode"
