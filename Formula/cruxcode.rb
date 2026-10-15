@@ -11,7 +11,7 @@ class Cruxcode < Formula
   desc "Crux Digital's coding harness: pi with GLaDOS workflows and TypeSafe Jev"
   homepage "https://github.com/cruxdigital-llc/homebrew-tools"
   url "https://registry.npmjs.org/@earendil-works/pi-coding-agent/-/pi-coding-agent-1.2.0.tgz"
-  version "0.6.1"
+  version "0.6.2"
   sha256 "1dfed308f46a69aec06bf9dc20700ddc6fe2370b1898f01334b7898397541e66"
   license "MIT"
 
@@ -38,7 +38,9 @@ class Cruxcode < Formula
       # pi is pinned to the version cruxcode is tested against (brew upgrade cruxcode moves it), so
       # pi's own "new version, run pi update" notice would only mislead.
       export PI_SKIP_VERSION_CHECK=1
-      REPO="git:github.com/cruxdigital-llc/cruxcode"
+      # Tracking the main branch explicitly keeps pi's own "Package Updates Available" notice away;
+      # cruxcode's updater handles updates (pi update still moves it to the newest commit).
+      REPO="git:github.com/cruxdigital-llc/cruxcode@main"
       AGENT_DIR="${PI_CODING_AGENT_DIR:-$HOME/.pi/agent}"
       HARNESS="$AGENT_DIR/git/github.com/cruxdigital-llc/cruxcode"
 
@@ -60,6 +62,17 @@ class Cruxcode < Formula
         echo "cruxcode: ready. Starting; a setup checklist inside will walk you through signing in." >&2
       }
 
+      # Installs from before 0.6.2 used the unpinned source; switch them to REPO.
+      pin_source() {
+        [ -f "$AGENT_DIR/settings.json" ] || return 0
+        node -e '
+          const fs = require("fs"), [f, from, to] = process.argv.slice(1);
+          const s = JSON.parse(fs.readFileSync(f, "utf8"));
+          const i = (s.packages ?? []).indexOf(from);
+          if (i >= 0) { s.packages[i] = to; fs.writeFileSync(f, JSON.stringify(s, null, 2) + "\n"); }
+        ' "$AGENT_DIR/settings.json" "git:github.com/cruxdigital-llc/cruxcode" "$REPO" || true
+      }
+
       # The harness downloads updates while cruxcode is open; install one before pi loads it.
       apply_downloaded_update() {
         [ -d "$HARNESS/.git" ] || return 0
@@ -78,12 +91,12 @@ class Cruxcode < Formula
           exit 0
           ;;
         update)
-          [ -d "$HARNESS" ] || install_harness
+          if [ -d "$HARNESS" ]; then pin_source; else install_harness; fi
           exec "$PI" update "$REPO"
           ;;
       esac
 
-      if [ -d "$HARNESS" ]; then apply_downloaded_update; else install_harness; fi
+      if [ -d "$HARNESS" ]; then pin_source; apply_downloaded_update; else install_harness; fi
       exec "$PI" "$@"
     SH
   end
