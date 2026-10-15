@@ -10,7 +10,7 @@ class Cruxcode < Formula
   desc "Crux Digital's coding harness: pi with GLaDOS workflows and TypeSafe Jev"
   homepage "https://github.com/cruxdigital-llc/homebrew-tools"
   url "https://registry.npmjs.org/@earendil-works/pi-coding-agent/-/pi-coding-agent-1.2.0.tgz"
-  version "0.3.0"
+  version "0.3.1"
   sha256 "1dfed308f46a69aec06bf9dc20700ddc6fe2370b1898f01334b7898397541e66"
   license "MIT"
 
@@ -50,14 +50,7 @@ class Cruxcode < Formula
             Object.assign(s, { defaultProvider: "cruxcode", defaultModel: "auto" });
             fs.writeFileSync(f, JSON.stringify(s, null, 2) + "\\n");
           }' "$AGENT_DIR/settings.json"
-        cat <<'EOS'
-
-      cruxcode is ready. Inside cruxcode, sign in once:
-        /login anthropic     your Claude account
-        /login openrouter    Jev (autopilot, routing, decision gate)
-        /cruxcode-setup      check everything is green
-
-      EOS
+        echo "cruxcode: ready. Starting; a setup checklist inside will walk you through signing in."
       }
 
       case "${1:-}" in
@@ -80,7 +73,8 @@ class Cruxcode < Formula
     <<~EOS
       Run `cruxcode` in any repo. The first run fetches the harness from the private
       cruxdigital-llc/cruxcode repo using your GitHub access (`gh auth login` and
-      `gh auth setup-git` if needed), then asks you to sign in to Claude and Jev.
+      `gh auth setup-git` if needed). A checklist inside cruxcode then walks you
+      through signing in to Claude and Jev; `/cruxcode-help` shows how to use it.
 
       `cruxcode update` pulls the latest harness; `brew upgrade cruxcode` updates pi.
       Settings and sign-ins live in ~/.pi/agent (not touched by brew).
