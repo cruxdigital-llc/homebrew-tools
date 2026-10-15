@@ -5,12 +5,13 @@
 #
 # The formula installs pi itself (pinned; the harness uses pi internals) and a `cruxcode` command.
 # The harness lives in a private repo, so it is not downloaded here: the first `cruxcode` run fetches
-# it with the person's own GitHub access, and `cruxcode update` pulls new versions.
+# it with the person's own GitHub access. While cruxcode is open it downloads new versions in the
+# background; this command installs a downloaded one at the next launch (`cruxcode update` forces it).
 class Cruxcode < Formula
   desc "Crux Digital's coding harness: pi with GLaDOS workflows and TypeSafe Jev"
   homepage "https://github.com/cruxdigital-llc/homebrew-tools"
   url "https://registry.npmjs.org/@earendil-works/pi-coding-agent/-/pi-coding-agent-1.2.0.tgz"
-  version "0.3.1"
+  version "0.5.0"
   sha256 "1dfed308f46a69aec06bf9dc20700ddc6fe2370b1898f01334b7898397541e66"
   license "MIT"
 
@@ -32,6 +33,8 @@ class Cruxcode < Formula
 
       PI="#{libexec}/bin/pi"
       export PATH="#{formula_opt_bin("node")}:$PATH"
+      # Tells the harness this command installs downloaded updates at launch.
+      export CRUXCODE_LAUNCHER=1
       REPO="git:github.com/cruxdigital-llc/cruxcode"
       AGENT_DIR="${PI_CODING_AGENT_DIR:-$HOME/.pi/agent}"
       HARNESS="$AGENT_DIR/git/github.com/cruxdigital-llc/cruxcode"
@@ -53,6 +56,18 @@ class Cruxcode < Formula
         echo "cruxcode: ready. Starting; a setup checklist inside will walk you through signing in."
       }
 
+      # The harness downloads updates while cruxcode is open; install one before pi loads it.
+      apply_downloaded_update() {
+        [ -d "$HARNESS/.git" ] || return 0
+        local behind
+        behind="$(git -C "$HARNESS" rev-list --count HEAD..origin/main 2>/dev/null || echo 0)"
+        [ "$behind" -gt 0 ] 2>/dev/null || return 0
+        echo "cruxcode: installing the update downloaded last session…"
+        if ! "$PI" update "$REPO" >/dev/null 2>&1; then
+          echo "cruxcode: the update didn't install, so this is the current version. Try 'cruxcode update'." >&2
+        fi
+      }
+
       case "${1:-}" in
         --version|-v)
           echo "cruxcode #{version} (pi $("$PI" --version))"
@@ -64,7 +79,7 @@ class Cruxcode < Formula
           ;;
       esac
 
-      [ -d "$HARNESS" ] || install_harness
+      if [ -d "$HARNESS" ]; then apply_downloaded_update; else install_harness; fi
       exec "$PI" "$@"
     SH
   end
@@ -76,7 +91,9 @@ class Cruxcode < Formula
       `gh auth setup-git` if needed). A checklist inside cruxcode then walks you
       through signing in to Claude and Jev; `/cruxcode-help` shows how to use it.
 
-      `cruxcode update` pulls the latest harness; `brew upgrade cruxcode` updates pi.
+      cruxcode downloads new versions while it's open and switches to them the
+      next time you start it (`cruxcode update` forces one now). `brew upgrade
+      cruxcode` updates pi.
       Settings and sign-ins live in ~/.pi/agent (not touched by brew).
     EOS
   end
