@@ -11,7 +11,7 @@ class Cruxcode < Formula
   desc "Crux Digital's coding harness: pi with GLaDOS workflows and TypeSafe Jev"
   homepage "https://github.com/cruxdigital-llc/homebrew-tools"
   url "https://registry.npmjs.org/@earendil-works/pi-coding-agent/-/pi-coding-agent-1.2.0.tgz"
-  version "0.6.2"
+  version "0.6.3"
   sha256 "1dfed308f46a69aec06bf9dc20700ddc6fe2370b1898f01334b7898397541e66"
   license "MIT"
 
@@ -69,7 +69,7 @@ class Cruxcode < Formula
           const fs = require("fs"), [f, from, to] = process.argv.slice(1);
           const s = JSON.parse(fs.readFileSync(f, "utf8"));
           const i = (s.packages ?? []).indexOf(from);
-          if (i >= 0) { s.packages[i] = to; fs.writeFileSync(f, JSON.stringify(s, null, 2) + "\n"); }
+          if (i >= 0) { s.packages[i] = to; fs.writeFileSync(f, JSON.stringify(s, null, 2) + "\\n"); }
         ' "$AGENT_DIR/settings.json" "git:github.com/cruxdigital-llc/cruxcode" "$REPO" || true
       }
 
