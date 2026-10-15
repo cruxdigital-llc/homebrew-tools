@@ -11,7 +11,7 @@ class Cruxcode < Formula
   desc "Crux Digital's coding harness: pi with GLaDOS workflows and TypeSafe Jev"
   homepage "https://github.com/cruxdigital-llc/homebrew-tools"
   url "https://registry.npmjs.org/@earendil-works/pi-coding-agent/-/pi-coding-agent-1.2.0.tgz"
-  version "0.5.0"
+  version "0.5.1"
   sha256 "1dfed308f46a69aec06bf9dc20700ddc6fe2370b1898f01334b7898397541e66"
   license "MIT"
 
@@ -40,8 +40,9 @@ class Cruxcode < Formula
       HARNESS="$AGENT_DIR/git/github.com/cruxdigital-llc/cruxcode"
 
       install_harness() {
-        echo "cruxcode: fetching the harness from github.com/cruxdigital-llc/cruxcode (uses your GitHub access)…"
-        if ! "$PI" install "$REPO"; then
+        echo "cruxcode: fetching the harness from github.com/cruxdigital-llc/cruxcode (uses your GitHub access)…" >&2
+        # stdout stays clean for --mode json and -p output; progress goes to stderr.
+        if ! "$PI" install "$REPO" >&2; then
           echo "cruxcode: couldn't fetch it. Run 'gh auth login' and 'gh auth setup-git', and make sure you can see cruxdigital-llc/cruxcode." >&2
           exit 1
         fi
@@ -53,7 +54,7 @@ class Cruxcode < Formula
             Object.assign(s, { defaultProvider: "cruxcode", defaultModel: "auto" });
             fs.writeFileSync(f, JSON.stringify(s, null, 2) + "\\n");
           }' "$AGENT_DIR/settings.json"
-        echo "cruxcode: ready. Starting; a setup checklist inside will walk you through signing in."
+        echo "cruxcode: ready. Starting; a setup checklist inside will walk you through signing in." >&2
       }
 
       # The harness downloads updates while cruxcode is open; install one before pi loads it.
@@ -62,7 +63,7 @@ class Cruxcode < Formula
         local behind
         behind="$(git -C "$HARNESS" rev-list --count HEAD..origin/main 2>/dev/null || echo 0)"
         [ "$behind" -gt 0 ] 2>/dev/null || return 0
-        echo "cruxcode: installing the update downloaded last session…"
+        echo "cruxcode: installing the update downloaded last session…" >&2
         if ! "$PI" update "$REPO" >/dev/null 2>&1; then
           echo "cruxcode: the update didn't install, so this is the current version. Try 'cruxcode update'." >&2
         fi
