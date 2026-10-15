@@ -11,7 +11,7 @@ class Cruxcode < Formula
   desc "Crux Digital's coding harness: pi with GLaDOS workflows and TypeSafe Jev"
   homepage "https://github.com/cruxdigital-llc/homebrew-tools"
   url "https://registry.npmjs.org/@earendil-works/pi-coding-agent/-/pi-coding-agent-1.2.0.tgz"
-  version "0.6.3"
+  version "0.8.0"
   sha256 "1dfed308f46a69aec06bf9dc20700ddc6fe2370b1898f01334b7898397541e66"
   license "MIT"
 
@@ -51,25 +51,24 @@ class Cruxcode < Formula
           echo "cruxcode: couldn't fetch it. Run 'gh auth login' and 'gh auth setup-git', and make sure you can see cruxdigital-llc/cruxcode." >&2
           exit 1
         fi
-        # Make cruxcode/auto the default model, unless one is already chosen.
-        node -e '
-          const fs = require("fs"), f = process.argv[1];
-          const s = fs.existsSync(f) ? JSON.parse(fs.readFileSync(f, "utf8")) : {};
-          if (!s.defaultModel) {
-            Object.assign(s, { defaultProvider: "cruxcode", defaultModel: "auto" });
-            fs.writeFileSync(f, JSON.stringify(s, null, 2) + "\\n");
-          }' "$AGENT_DIR/settings.json"
+        ensure_settings
         echo "cruxcode: ready. Starting; a setup checklist inside will walk you through signing in." >&2
       }
 
-      # Installs from before 0.6.2 used the unpinned source; switch them to REPO.
-      pin_source() {
-        [ -f "$AGENT_DIR/settings.json" ] || return 0
+      # cruxcode's pi defaults, set only where the person hasn't chosen: cruxcode/auto as the model,
+      # and a quiet start (the cruxcode header, without pi's list of loaded skills and extensions).
+      # Also moves installs from before 0.6.2 off the unpinned source.
+      ensure_settings() {
+        mkdir -p "$AGENT_DIR"
         node -e '
           const fs = require("fs"), [f, from, to] = process.argv.slice(1);
-          const s = JSON.parse(fs.readFileSync(f, "utf8"));
+          const s = fs.existsSync(f) ? JSON.parse(fs.readFileSync(f, "utf8")) : {};
+          const before = JSON.stringify(s);
           const i = (s.packages ?? []).indexOf(from);
-          if (i >= 0) { s.packages[i] = to; fs.writeFileSync(f, JSON.stringify(s, null, 2) + "\\n"); }
+          if (i >= 0) s.packages[i] = to;
+          if (!s.defaultModel) Object.assign(s, { defaultProvider: "cruxcode", defaultModel: "auto" });
+          if (!("quietStartup" in s)) s.quietStartup = "header";
+          if (JSON.stringify(s) !== before) fs.writeFileSync(f, JSON.stringify(s, null, 2) + "\\n");
         ' "$AGENT_DIR/settings.json" "git:github.com/cruxdigital-llc/cruxcode" "$REPO" || true
       }
 
@@ -91,12 +90,12 @@ class Cruxcode < Formula
           exit 0
           ;;
         update)
-          if [ -d "$HARNESS" ]; then pin_source; else install_harness; fi
+          if [ -d "$HARNESS" ]; then ensure_settings; else install_harness; fi
           exec "$PI" update "$REPO"
           ;;
       esac
 
-      if [ -d "$HARNESS" ]; then pin_source; apply_downloaded_update; else install_harness; fi
+      if [ -d "$HARNESS" ]; then ensure_settings; apply_downloaded_update; else install_harness; fi
       exec "$PI" "$@"
     SH
   end
